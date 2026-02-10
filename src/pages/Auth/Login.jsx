@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../state/AuthContext';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -9,14 +10,12 @@ const Login = () => {
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
-    setServerError('');
   };
 
   const validate = () => {
@@ -49,7 +48,7 @@ const Login = () => {
     } catch (err) {
       const message =
         err.response?.data?.message || 'Login failed. Please try again.';
-      setServerError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -65,11 +64,6 @@ const Login = () => {
           Sign in to access your dashboard.
         </p>
 
-        {serverError && (
-          <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {serverError}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

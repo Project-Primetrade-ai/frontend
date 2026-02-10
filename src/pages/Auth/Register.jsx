@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../state/AuthContext';
+import { toast } from 'react-toastify';
 
 const strongPasswordRules = [
   { key: 'len', label: 'At least 8 characters', test: (p) => p.length >= 8 },
@@ -24,7 +25,6 @@ const Register = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -43,7 +43,6 @@ const Register = () => {
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: '' }));
-    setServerError('');
   };
 
   const validate = () => {
@@ -92,7 +91,7 @@ const Register = () => {
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.msg ||
         'Registration failed. Please try again.';
-      setServerError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -104,11 +103,6 @@ const Register = () => {
         <h1 className="mb-2 text-2xl font-semibold text-white">Create an account</h1>
         <p className="mb-6 text-sm text-slate-400">Sign up to get your personal dashboard.</p>
 
-        {serverError && (
-          <div className="mb-4 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            {serverError}
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

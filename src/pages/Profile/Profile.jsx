@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Layout from '../../components/Layout';
 import { apiClient } from '../../api/client';
 import { useAuth } from '../../state/AuthContext';
+import { toast } from 'react-toastify';
 
 const strongPasswordRules = [
   { key: 'len', label: 'At least 8 characters', test: (p) => p.length >= 8 },
@@ -41,8 +42,6 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
-  const [toast, setToast] = useState({ type: '', text: '' }); 
-  const [passwordToast, setPasswordToast] = useState({ type: '', text: '' });
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -52,7 +51,7 @@ const Profile = () => {
         setForm({ name: data.name || '', email: data.email || '' });
         setInitial({ name: data.name || '', email: data.email || '' });
       } catch {
-        setToast({ type: 'error', text: 'Failed to load profile.' });
+        toast.error('Failed to load profile.');
       } finally {
         setInitialLoading(false);
       }
@@ -81,7 +80,6 @@ const Profile = () => {
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    if (toast.text) setToast({ type: '', text: '' });
   };
 
   const validate = () => {
@@ -98,12 +96,12 @@ const Profile = () => {
 
     const validationError = validate();
     if (validationError) {
-      setToast({ type: 'error', text: validationError });
+      toast.error(validationError);
       return;
     }
 
     if (!isDirty) {
-      setToast({ type: 'error', text: 'No changes to save.' });
+      toast.error('No changes to save.');
       return;
     }
 
@@ -115,9 +113,9 @@ const Profile = () => {
       setUser(data);
       setForm({ name: data.name || '', email: data.email || '' });
       setInitial({ name: data.name || '', email: data.email || '' });
-      setToast({ type: 'success', text: 'Profile updated successfully.' });
+      toast.success('Profile updated successfully.');
     } catch {
-      setToast({ type: 'error', text: 'Failed to update profile.' });
+      toast.error('Failed to update profile.');
     } finally {
       setLoading(false);
     }
@@ -125,7 +123,6 @@ const Profile = () => {
 
   const handlePasswordChange = (e) => {
     setPasswordForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    if (passwordToast.text) setPasswordToast({ type: '', text: '' });
   };
 
   const validatePassword = () => {
@@ -141,7 +138,7 @@ const Profile = () => {
 
     const validationError = validatePassword();
     if (validationError) {
-      setPasswordToast({ type: 'error', text: validationError });
+      toast.error(validationError);
       return;
     }
 
@@ -154,13 +151,13 @@ const Profile = () => {
       await apiClient.put('/profile/password', payload);
 
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setPasswordToast({ type: 'success', text: 'Password updated successfully.' });
+      toast.success('Password updated successfully.');
     } catch (err) {
       const message =
         err.response?.data?.message ||
         err.response?.data?.errors?.[0]?.msg ||
         'Failed to update password.';
-      setPasswordToast({ type: 'error', text: message });
+      toast.error(message);
     } finally {
       setPasswordLoading(false);
     }
@@ -196,17 +193,6 @@ const Profile = () => {
               </div>
             ) : (
               <>
-                {toast.text && (
-                  <div
-                    className={`mb-4 rounded-md border px-3 py-2 text-sm ${
-                      toast.type === 'success'
-                        ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-                        : 'border-red-500/40 bg-red-500/10 text-red-300'
-                    }`}
-                  >
-                    {toast.text}
-                  </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -242,7 +228,6 @@ const Profile = () => {
                       type="button"
                       onClick={() => {
                         setForm({ name: initial.name, email: initial.email });
-                        setToast({ type: '', text: '' });
                       }}
                       disabled={loading || !isDirty}
                       className="rounded-md border border-slate-700 bg-slate-900/40 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
@@ -266,17 +251,6 @@ const Profile = () => {
           <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-6 shadow">
             <h2 className="text-lg font-semibold text-white mb-4">Change password</h2>
 
-            {passwordToast.text && (
-              <div
-                className={`mb-4 rounded-md border px-3 py-2 text-sm ${
-                  passwordToast.type === 'success'
-                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-                    : 'border-red-500/40 bg-red-500/10 text-red-300'
-                }`}
-              >
-                {passwordToast.text}
-              </div>
-            )}
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div className="relative">

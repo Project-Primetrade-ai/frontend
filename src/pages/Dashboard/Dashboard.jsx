@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Layout from "../../components/Layout";
 import { apiClient } from "../../api/client";
+import { toast } from "react-toastify";
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -11,9 +12,9 @@ const Dashboard = () => {
     description: "",
     status: "pending",
   });
-  const [taskMessage, setTaskMessage] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [openMenuId, setOpenMenuId] = useState(null);
 
   const loadTasks = async (params = {}) => {
     try {
@@ -26,7 +27,7 @@ const Dashboard = () => {
       });
       setTasks(data);
     } catch {
-      setTaskMessage("Failed to load tasks.");
+      toast.error("Failed to load tasks.");
     } finally {
       setTasksLoading(false);
     }
@@ -34,12 +35,31 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  useEffect(() => {
+    const onMouseDown = (e) => {
+      if (!e.target.closest("[data-task-menu]")) setOpenMenuId(null);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setOpenMenuId(null);
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, []);
+
+  const toggleMenu = (taskId) => {
+    setOpenMenuId((prev) => (prev === taskId ? null : taskId));
+  };
 
   const handleTaskChange = (e) => {
     setTaskForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    setTaskMessage("");
   };
 
   const resetTaskForm = () => {
@@ -49,7 +69,7 @@ const Dashboard = () => {
   const handleTaskSubmit = async (e) => {
     e.preventDefault();
     if (!taskForm.title) {
-      setTaskMessage("Title is required.");
+      toast.error("Title is required.");
       return;
     }
 
@@ -61,7 +81,7 @@ const Dashboard = () => {
           status: taskForm.status,
         });
         setTasks((prev) => prev.map((t) => (t._id === data._id ? data : t)));
-        setTaskMessage("Task updated.");
+        toast.success("Task updated.");
       } else {
         const { data } = await apiClient.post("/tasks", {
           title: taskForm.title,
@@ -69,7 +89,7 @@ const Dashboard = () => {
           status: taskForm.status,
         });
         setTasks((prev) => [data, ...prev]);
-        setTaskMessage("Task created.");
+        toast.success("Task created.");
       }
       resetTaskForm();
     } catch (err) {
@@ -77,7 +97,7 @@ const Dashboard = () => {
         err.response?.data?.errors?.[0]?.msg ||
         err.response?.data?.message ||
         "Failed to save task.";
-      setTaskMessage(message);
+      toast.error(message);
     }
   };
 
@@ -95,9 +115,9 @@ const Dashboard = () => {
     try {
       await apiClient.delete(`/tasks/${taskId}`);
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
-      setTaskMessage("Task deleted.");
+      toast.success("Task deleted.");
     } catch {
-      setTaskMessage("Failed to delete task.");
+      toast.error("Failed to delete task.");
     }
   };
 
@@ -125,6 +145,7 @@ const Dashboard = () => {
                   Create, search, filter, and manage your tasks.
                 </p>
               </div>
+
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <input
                   type="text"
@@ -159,6 +180,7 @@ const Dashboard = () => {
                   placeholder="Task title"
                 />
               </div>
+
               <div className="sm:col-span-1">
                 <label className="mb-1 block text-slate-300">Description</label>
                 <input
@@ -168,6 +190,7 @@ const Dashboard = () => {
                   placeholder="Short description (optional)"
                 />
               </div>
+
               <div>
                 <label className="mb-1 block text-slate-300">Status</label>
                 <select
@@ -180,6 +203,7 @@ const Dashboard = () => {
                   <option value="completed">Completed</option>
                 </select>
               </div>
+
               <div className="flex flex-col items-stretch justify-end gap-2">
                 <button
                   type="submit"
@@ -187,6 +211,7 @@ const Dashboard = () => {
                 >
                   {taskForm.id ? "Update" : "Add"} task
                 </button>
+
                 {taskForm.id && (
                   <button
                     type="button"
@@ -199,73 +224,120 @@ const Dashboard = () => {
               </div>
             </form>
 
-            {taskMessage && (
-              <p className="mb-3 text-xs text-slate-300">{taskMessage}</p>
-            )}
+            <div className="max-h-[420px] overflow-y-auto pr-2">
+  {tasksLoading ? (
+    <p className="text-xs text-slate-400">Loading tasks...</p>
+  ) : tasks.length === 0 ? (
+    <p className="text-xs text-slate-400">
+      No tasks found. Create your first one above.
+    </p>
+  ) : (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+      {tasks.map((task) => (
+        <div
+          key={task._id}
+          className="group relative rounded-xl border border-slate-800/80 bg-slate-900/70 p-4 shadow-sm ring-1 ring-white/5 backdrop-blur transition
+                     hover:-translate-y-0.5 hover:border-slate-700 hover:bg-slate-900/90"
+        >
+          <div className="flex h-44 flex-col">
+            {/* Top row */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold text-slate-100 truncate">
+                  {task.title}
+                </h3>
 
-            <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
-              {tasksLoading ? (
-                <p className="text-xs text-slate-400">Loading tasks...</p>
-              ) : tasks.length === 0 ? (
-                <p className="text-xs text-slate-400">
-                  No tasks found. Create your first one above.
+                <div className="mt-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border ${
+                      task.status === "completed"
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                        : task.status === "in-progress"
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                        : "bg-slate-700/60 text-slate-200 border-slate-500/40"
+                    }`}
+                  >
+                    {task.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions dropdown */}
+              <div className="relative shrink-0" data-task-menu>
+                <button
+                  type="button"
+                  onClick={() => toggleMenu(task._id)}
+                  aria-label="Task actions"
+                  aria-haspopup="menu"
+                  aria-expanded={openMenuId === task._id}
+                  className="rounded-md border border-slate-700 bg-slate-800/40 px-2 py-1 text-[12px] text-slate-100
+                             hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                >
+                  ⋮
+                </button>
+
+                {openMenuId === task._id && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-32 overflow-hidden rounded-lg border border-slate-700 bg-slate-950 shadow-xl z-30"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        handleTaskEdit(task);
+                        setOpenMenuId(null);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-100 hover:bg-slate-800"
+                    >
+                      ✏️ <span>Edit</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        handleTaskDelete(task._id);
+                        setOpenMenuId(null);
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-red-200 hover:bg-red-500/20"
+                    >
+                      🗑️ <span>Delete</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="mt-3 flex-1">
+              {task.description ? (
+                <p className="text-xs text-slate-300 leading-snug max-h-14 overflow-hidden">
+                  {task.description}
                 </p>
               ) : (
-                tasks.map((task) => (
-                  <div
-                    key={task._id}
-                    className="flex items-start justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/80 p-3 text-xs"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-slate-100">
-                          {task.title}
-                        </h3>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                            task.status === "completed"
-                              ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                              : task.status === "in-progress"
-                                ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
-                                : "bg-slate-700/60 text-slate-200 border border-slate-500/40"
-                          }`}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-                      {task.description && (
-                        <p className="mt-1 text-[11px] text-slate-300">
-                          {task.description}
-                        </p>
-                      )}
-                      <p className="mt-1 text-[10px] text-slate-500">
-                        Created{" "}
-                        {new Date(task.createdAt).toLocaleString(undefined, {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        })}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <button
-                        onClick={() => handleTaskEdit(task)}
-                        aria-label="Task actions"
-                        className="rounded border border-slate-600 px-2 py-1 text-[10px] text-slate-100 hover:bg-slate-800"
-                      >
-                        ⋮
-                      </button>
-
-                      <button
-                        onClick={() => handleTaskDelete(task._id)}
-                        className="rounded border border-red-500/60 px-2 py-1 text-[10px] text-red-200 hover:bg-red-500/20 inline-flex items-center gap-1"
-                      >
-                        🗑️ <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                ))
+                <p className="text-xs text-slate-500 italic">No description</p>
               )}
             </div>
+
+            {/* Footer */}
+            <div className="pt-3">
+              <div className="h-px w-full bg-slate-800/80 mb-2" />
+              <p className="text-[10px] text-slate-500">
+                Created{" "}
+                {new Date(task.createdAt).toLocaleString(undefined, {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
           </div>
         </section>
       </div>
