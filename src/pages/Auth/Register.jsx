@@ -76,7 +76,6 @@ const Register = () => {
     try {
       setLoading(true);
 
-      // Don't send confirmPassword to backend
       const payload = {
         name: form.name.trim(),
         email: form.email.trim(),
@@ -145,8 +144,6 @@ const Register = () => {
               placeholder="Use a strong password"
               className="w-full rounded-md border border-slate-700 bg-slate-950/40 px-3 py-2 text-sm text-white placeholder:text-slate-500 outline-none focus:border-indigo-500"
             />
-
-            {/* Show only unmet password rules. Hide when all are satisfied. */}
             {form.password && unmetRules.length > 0 && (
               <div className="mt-2 rounded-md border border-slate-800 bg-slate-950/40 p-3">
                 <p className="mb-2 text-xs text-slate-400">Password must include:</p>

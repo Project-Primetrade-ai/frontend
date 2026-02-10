@@ -299,8 +299,6 @@ const Profile = () => {
                   className={inputClass}
                   disabled={passwordLoading}
                 />
-
-                {/* Show only unmet password rules. Hide when all are satisfied. */}
                 {passwordForm.newPassword && unmetRules.length > 0 && (
                   <div className="mt-2 rounded-md border border-slate-800 bg-slate-950/40 p-3">
                     <p className="mb-2 text-xs text-slate-400">Password must include:</p>
